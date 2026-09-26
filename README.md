@@ -24,8 +24,9 @@
 
 ### Через Docker Compose
 
-Compose поднимает только Django-приложение. PostgreSQL должен быть запущен на Mac,
-в уже созданной локальной базе `abac_scud`.
+Compose поднимает два контейнера: `db` (PostgreSQL 16, данные в томе `abac_scud_pgdata`)
+и `web` (Django + gunicorn). При старте `web` ждёт базу, применяет миграции и запускает
+`seed_if_empty` — демо-данные загружаются, только если база пустая.
 
 ```bash
 cp .env.example .env
@@ -33,6 +34,21 @@ docker compose up --build
 ```
 
 3D-карта будет доступна на `http://127.0.0.1:8000/`, API — на `http://127.0.0.1:8000/api/`.
+PostgreSQL из контейнера доступен с хоста на `localhost:5433`.
+
+```bash
+docker compose exec web python manage.py seed_if_empty --force  # перезалить демо-данные
+docker compose down -v                                          # удалить вместе с базой
+```
+
+### Деплой на Render
+
+1. Закоммитить и запушить изменения (`Dockerfile`, `render.yaml`, `docker/entrypoint.sh`).
+2. В Render: **New → Blueprint** → выбрать репозиторий.
+3. Render создаст PostgreSQL `abac-scud-db` и веб-сервис; `DATABASE_URL` и
+   `DJANGO_SECRET_KEY` подставятся автоматически. При первом запуске база заполнится демо-данными.
+
+Бесплатная PostgreSQL на Render удаляется через 30 дней — для постоянной работы нужен платный план.
 
 ### Без Docker
 
