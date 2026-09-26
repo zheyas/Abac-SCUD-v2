@@ -1,0 +1,30 @@
+# Render Blueprint: New → Blueprint → выбрать этот репозиторий.
+# PostgreSQL поднимается внутри того же Docker-контейнера (docker/start-postgres.sh),
+# отдельная база на Render не нужна.
+services:
+  - type: web
+    name: abac-scud
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /
+    envVars:
+      - key: EMBEDDED_POSTGRES
+        value: "1"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "0"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: .onrender.com
+      - key: TIME_ZONE
+        value: Asia/Yekaterinburg
+      - key: WEB_CONCURRENCY
+        value: "2"
+    # На бесплатном плане файловая система эфемерная: база пересоздаётся и
+    # заново заполняется демо-данными при каждом деплое/перезапуске.
+    # Чтобы данные сохранялись, нужен платный план и постоянный диск:
+    # disk:
+    #   name: abac-scud-pgdata
+    #   mountPath: /var/lib/postgresql/data
+    #   sizeGB: 1
